@@ -35,7 +35,7 @@ export class SessionHandler {
             }
 
             const cookies = parseCookieHeader(req.headers.cookie || "");
-            const jwtTokens = cookies[getJWTCookieName(this.config)];
+            const jwtTokens = this.filterCookieValues(cookies);
 
             let decoded: { payload: JwtPayload; keyId: string } | undefined = undefined;
             try {
@@ -146,10 +146,23 @@ export class SessionHandler {
      */
     async verifyJWTCookie(cookie: string): Promise<JwtPayload | undefined> {
         const cookies = parseCookieHeader(cookie);
-        const cookieValues = cookies[getJWTCookieName(this.config)];
+        const cookieValues = this.filterCookieValues(cookies);
 
         const token = await this.verifyFirstValidJwt(cookieValues);
         return token?.payload;
+    }
+
+    private filterCookieValues(cookies: { [key: string]: string[] }): string[] {
+        const cookieValues = cookies[getPrimaryJWTCookieName(this.config)];
+
+        const secondaryCookieName = getSecondaryJWTCookieName(this.config);
+        if (secondaryCookieName) {
+            const secondaryCookieValues = cookies[secondaryCookieName];
+            if (secondaryCookieValues) {
+                cookieValues.push(...secondaryCookieValues);
+            }
+        }
+        return cookieValues;
     }
 
     /**
@@ -172,7 +185,7 @@ export class SessionHandler {
         for (const jwtToken of tokenCandidates) {
             try {
                 const token = await this.authJWT.verify(jwtToken);
-                log.debug("JWT Session token verified", { token });
+                log.debug("JWT Session token verified", { token, jwtToken });
                 return token;
             } catch (err) {
                 if (!firstVerifyError) {
@@ -204,7 +217,7 @@ export class SessionHandler {
         const token = await this.authJWT.sign(userID, payload, options?.expirySeconds);
 
         return {
-            name: getJWTCookieName(this.config),
+            name: getPrimaryJWTCookieName(this.config),
             value: token,
             opts: {
                 domain: getJWTCookieDomain(this.config),
@@ -217,14 +230,22 @@ export class SessionHandler {
     }
 
     public clearSessionCookie(res: express.Response, config: Config): void {
-        res.clearCookie(getJWTCookieName(this.config), {
+        res.clearCookie(getPrimaryJWTCookieName(this.config), {
             domain: getJWTCookieDomain(config),
         });
     }
 }
 
-function getJWTCookieName(config: Config) {
+function getPrimaryJWTCookieName(config: Config) {
     return config.auth.session.cookie.name;
+}
+
+function getSecondaryJWTCookieName(config: Config) {
+    const PREFIX = "__Host-";
+    if (!config.auth.session.cookie.name.startsWith(PREFIX)) {
+        return undefined;
+    }
+    return config.auth.session.cookie.name.slice(PREFIX.length);
 }
 
 function getJWTCookieDomain(config: Config): string {
