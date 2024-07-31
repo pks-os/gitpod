@@ -344,9 +344,6 @@ func (tm *tasksManager) Run(ctx context.Context, wg *sync.WaitGroup, successChan
 				t.successChan <- taskSuccessful
 			} else {
 				msg := "cannot wait for task"
-				if err != nil {
-					msg = err.Error()
-				}
 
 				t.successChan <- taskFailed(fmt.Sprintf("%s: %s", msg, t.lastOutput))
 			}
@@ -509,6 +506,7 @@ func (tm *tasksManager) watch(task *task, term *terminal.Term, wg *sync.WaitGrou
 		if err != nil {
 			log.WithError(err).Error("cannot copy from terminal")
 		}
+		term.WatchDone <- struct{}{}
 
 		elapsed := time.Since(start)
 		if parentElapsed > elapsed {

@@ -82,6 +82,7 @@ func (m *Mux) Start(cmd *exec.Cmd, options TermOptions) (alias string, err error
 
 	go func() {
 		term.waitErr = cmd.Wait()
+		<-term.WatchDone // wait for all listeners to finish
 		close(term.waitDone)
 		_ = m.CloseTerminal(context.Background(), alias, false)
 	}()
@@ -324,8 +325,9 @@ type Term struct {
 
 	Stdout *multiWriter
 
-	waitErr  error
-	waitDone chan struct{}
+	WatchDone chan struct{}
+	waitErr   error
+	waitDone  chan struct{}
 }
 
 func (term *Term) GetTitle() (string, api.TerminalTitleSource, error) {
