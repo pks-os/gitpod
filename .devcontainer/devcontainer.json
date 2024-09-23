@@ -12,7 +12,8 @@
     ],
     "remoteEnv": {
         "GIT_EDITOR": "code --wait",
-        "KUBE_EDITOR": "code --wait"
+        "KUBE_EDITOR": "code --wait",
+        "PREVIEW_ENV_DEV_SA_KEY_PATH": "/home/gitpod/.config/gcloud/preview-environment-dev-sa.json"
     },
     "features": {
         "ghcr.io/devcontainers/features/docker-in-docker:2": {

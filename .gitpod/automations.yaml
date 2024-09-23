@@ -1,0 +1,39 @@
+tasks:
+  setup-workspace:
+    name: setup workspace
+    triggeredBy:
+    - postEnvironmentStart
+    command: |
+      export PREVIEW_ENV_DEV_SA_KEY_PATH="/home/gitpod/.config/gcloud/preview-environment-dev-sa.json"
+      leeway run dev/preview:configure-workspace
+      leeway run dev/preview/previewctl:install
+  preview-create:
+    name: create preview
+    dependsOn:
+    - setup-workspace
+    triggeredBy:
+    - manual
+    command: |
+      export PREVIEW_ENV_DEV_SA_KEY_PATH="/home/gitpod/.config/gcloud/preview-environment-dev-sa.json"
+      previewctl create
+  preview-delete:
+    name: delete preview
+    dependsOn:
+    - setup-workspace
+    triggeredBy:
+    - manual
+    command: |
+      export PREVIEW_ENV_DEV_SA_KEY_PATH="/home/gitpod/.config/gcloud/preview-environment-dev-sa.json"
+      previewctl delete
+services:
+  preview-update-kubectx:
+    name: update kubectx
+    # trigger:
+    # - onStart
+    # dependsOn:
+    # - setup-workspace
+    # TODO(gpl): would be great if we could depend on a task - or use "gitpod auto task start setup-workspace --wait"
+    commands:
+      start: |
+        leeway run dev/preview/previewctl:install
+        previewctl install-context --watch
