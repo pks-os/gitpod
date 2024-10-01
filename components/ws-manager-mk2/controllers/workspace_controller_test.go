@@ -392,6 +392,7 @@ var _ = Describe("WorkspaceController", func() {
 		It("pod rejection should result in a retry", func() {
 			ws := newWorkspace(uuid.NewString(), "default")
 			m := collectMetricCounts(wsMetrics, ws)
+			su := collectSubscriberUpdates()
 
 			// ### prepare block start
 			By("creating workspace")
@@ -530,6 +531,8 @@ var _ = Describe("WorkspaceController", func() {
 				starts:         1, // this is NOT PodStarts, but merely an artifact of how we count it in the tests
 				recreations:    map[int]int{1: 1},
 			})
+
+			expectPhaseTransitions(su, []workspacev1.WorkspacePhase{workspacev1.WorkspacePhasePending, workspacev1.WorkspacePhaseCreating, workspacev1.WorkspacePhaseInitializing, workspacev1.WorkspacePhaseRunning})
 			// ### validate end
 		})
 	})
@@ -1041,4 +1044,36 @@ func expectMetricsDelta(initial metricCounts, cur metricCounts, expectedDelta me
 	Expect(cur.backupFailures-initial.backupFailures).To(Equal(expectedDelta.backupFailures), "expected metric count delta for backupFailures")
 	Expect(cur.restores-initial.restores).To(Equal(expectedDelta.restores), "expected metric count delta for restores")
 	Expect(cur.restoreFailures-initial.restoreFailures).To(Equal(expectedDelta.restoreFailures), "expected metric count delta for restoreFailures")
+}
+
+type subscriberUpdates struct {
+	phaseTransitions []workspacev1.WorkspacePhase
+}
+
+func collectSubscriberUpdates() *subscriberUpdates {
+	su := subscriberUpdates{}
+	recordPhaseTransition := func(su *subscriberUpdates, ws *workspacev1.Workspace) {
+		phase := ws.Status.Phase
+
+		var lastPhase workspacev1.WorkspacePhase
+		lenPhases := len(su.phaseTransitions)
+		if lenPhases > 0 {
+			lastPhase = su.phaseTransitions[lenPhases-1]
+		}
+
+		if lastPhase != phase {
+			su.phaseTransitions = append(su.phaseTransitions, phase)
+		}
+	}
+
+	RegisterSubscriber(func(ws *workspacev1.Workspace) {
+		recordPhaseTransition(&su, ws)
+	})
+	return &su
+}
+
+func expectPhaseTransitions(su *subscriberUpdates, expectation []workspacev1.WorkspacePhase) {
+	GinkgoHelper()
+	By("checking recorded phase transitions")
+	Expect(su.phaseTransitions).To(HaveExactElements(expectation), "expected list of recorded phase transitions")
 }

@@ -235,6 +235,7 @@ func (r *WorkspaceReconciler) actOnStatus(ctx context.Context, workspace *worksp
 			// Reset status
 			sc := workspace.Status.DeepCopy()
 			workspace.Status = workspacev1.WorkspaceStatus{}
+			workspace.Status.Phase = workspacev1.WorkspacePhasePending
 			workspace.Status.OwnerToken = sc.OwnerToken
 			workspace.Status.PodStarts = sc.PodStarts
 			workspace.Status.PodRecreated = sc.PodRecreated + 1
