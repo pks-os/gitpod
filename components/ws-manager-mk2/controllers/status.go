@@ -37,6 +37,12 @@ const (
 	// headlessTaskFailedPrefix is the prefix of the pod termination message if a headless task failed (e.g. user error
 	// or aborted prebuild).
 	headlessTaskFailedPrefix = "headless task failed: "
+
+	// podRejectedReasonNodeAffinity is the value of pod.status.Reason in case the pod got rejected by kubelet because of a NodeAffinity mismatch
+	podRejectedReasonNodeAffinity = "NodeAffinity"
+
+	// podRejectedReasonOutOfCPU is the value of pod.status.Reason in case the pod got rejected by kubelet because of insufficient CPU available
+	podRejectedReasonOutOfCPU = "OutOfcpu"
 )
 
 func (r *WorkspaceReconciler) updateWorkspaceStatus(ctx context.Context, workspace *workspacev1.Workspace, pods *corev1.PodList, cfg *config.Configuration) (err error) {
@@ -125,7 +131,7 @@ func (r *WorkspaceReconciler) updateWorkspaceStatus(ctx context.Context, workspa
 
 	if failure != "" && !workspace.IsConditionTrue(workspacev1.WorkspaceConditionFailed) {
 		// Check: A situation where we want to retry?
-		if pod.Status.Phase == corev1.PodFailed && (pod.Status.Reason == "NodeAffinity" || pod.Status.Reason == "OutOfCPU") && strings.HasPrefix(pod.Status.Message, "Pod was rejected") {
+		if pod.Status.Phase == corev1.PodFailed && (pod.Status.Reason == podRejectedReasonNodeAffinity || pod.Status.Reason == podRejectedReasonOutOfCPU) && strings.HasPrefix(pod.Status.Message, "Pod was rejected") {
 			// This is a situation where we want to re-create the pod!
 			log.Info("workspace scheduling failed", "workspace", workspace.Name, "reason", failure)
 			workspace.Status.SetCondition(workspacev1.NewWorkspaceConditionPodRejected(failure, metav1.ConditionTrue))

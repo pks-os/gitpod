@@ -785,7 +785,7 @@ func rejectPod(pod *corev1.Pod) {
 	By("adding pod rejected condition")
 	updateObjWithRetries(k8sClient, pod, true, func(pod *corev1.Pod) {
 		pod.Status.Phase = corev1.PodFailed
-		pod.Status.Reason = "NodeAffinity"
+		pod.Status.Reason = "OutOfcpu"
 		pod.Status.Message = "Pod was rejected"
 	})
 }
