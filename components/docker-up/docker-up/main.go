@@ -132,9 +132,13 @@ func runWithinNetns() (err error) {
 	args = append(args, fmt.Sprintf("--mtu=%v", netIface.Attrs().MTU))
 	// configure docker0 MTU (used as control plane, not related to containers)
 	args = append(args, fmt.Sprintf("--network-control-plane-mtu=%v", netIface.Attrs().MTU))
+	// configure docker0 MTU (used as control plane, not related to containers)
 
-	// cmp. ENT-324: Required to run dockerd >= 26.1 in a Gitpod workspace
-	os.Setenv("DOCKER_ALLOW_IPV6_ON_IPV4_INTERFACE", "1")
+	args = append(args, "--ip6tables=false")
+	//args = append(args, "--default-network-opt=bridge=com.docker.network.enable_ipv6=true")
+
+	// // cmp. ENT-324: Required to run dockerd >= 26.1 in a Gitpod workspace
+	// os.Setenv("DOCKER_ALLOW_IPV6_ON_IPV4_INTERFACE", "1")
 
 	if listenFDs > 0 {
 

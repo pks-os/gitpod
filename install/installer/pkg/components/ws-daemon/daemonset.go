@@ -57,7 +57,8 @@ func daemonset(ctx *common.RenderContext) ([]runtime.Object, error) {
 	sysctl -w "net.ipv4.tcp_tw_reuse=1" &&
 	sysctl -w fs.inotify.max_user_watches=1000000 &&
 	sysctl -w "kernel.dmesg_restrict=1" &&
-	sysctl -w vm.unprivileged_userfaultfd=0
+	sysctl -w vm.unprivileged_userfaultfd=0 &&
+	sysctl -w net.ipv6.conf.default.disable_ipv6=1
 ) && echo "done!" || echo "failed!"
 `,
 			},
