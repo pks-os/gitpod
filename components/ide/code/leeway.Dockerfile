@@ -39,7 +39,7 @@ RUN apt-get install -y pkg-config dbus xvfb libgtk-3-0 libxkbfile-dev libkrb5-de
 
 # ENV npm_config_arch=x64
 RUN mkdir -p .build \
-    && npm config set registry "$NPM_REGISTRY" \
+    && npm config set registry $NPM_REGISTRY \
     && npm ci
 
 # check that the provided codeVersion is the correct one for the given codeCommit
