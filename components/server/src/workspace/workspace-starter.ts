@@ -490,7 +490,7 @@ export class WorkspaceStarter {
             client = await this.clientProvider.get(instanceRegion);
         } catch (err) {
             log.error({ instanceId }, "cannot stop workspace instance", err);
-            // we want to stop a workspace but the region doesn't exist. So we can assume it doesn't run anyymore and there will never be updates coming to bridge.
+            // we want to stop a workspace but the region doesn't exist. So we can assume it doesn't run anymore and there will never be updates coming to bridge.
             // let's mark this workspace as stopped if it is not already stopped.
             const workspace = await this.workspaceDb.trace(ctx).findByInstanceId(instanceId);
             const instance = await this.workspaceDb.trace(ctx).findInstanceById(instanceId);
@@ -843,7 +843,7 @@ export class WorkspaceStarter {
 
     /**
      * failInstanceStart properly fails a workspace instance if something goes wrong before the instance ever reaches
-     * workspace manager. In this case we need to make sure we also fulfil the tasks of the bridge (e.g. for prebulds).
+     * workspace manager. In this case we need to make sure we also fulfil the tasks of the bridge (e.g. for prebuilds).
      */
     private async failInstanceStart(ctx: TraceContext, err: any, workspace: Workspace, instance: WorkspaceInstance) {
         if (ctxIsAborted()) {
@@ -1344,7 +1344,10 @@ export class WorkspaceStarter {
                     `workspace image build failed: ${message}`,
                     { looksLikeUserError: true },
                 );
-                err = new StartInstanceError("imageBuildFailedUser", err);
+                err = new StartInstanceError(
+                    "imageBuildFailedUser",
+                    `workspace image build failed: ${message}. For further logs, try executing \`gp validate\` inside of a workspace`,
+                );
                 // Don't report this as "failed" to our metrics as it would trigger an alert
             } else {
                 log.error(
