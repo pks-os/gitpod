@@ -39,6 +39,7 @@ import {
     WorkspaceContext,
     WorkspaceInfo,
     WorkspaceSession as WorkspaceSessionProtocol,
+    Configuration as GitpodServerInstallationConfiguration,
 } from "@gitpod/gitpod-protocol/lib/protocol";
 import { AuditLog as AuditLogProtocol } from "@gitpod/gitpod-protocol/lib/audit-log";
 import {
@@ -104,6 +105,7 @@ import {
 import {
     BlockedEmailDomain,
     BlockedRepository,
+    InstallationConfiguration,
     OnboardingState,
 } from "@gitpod/public-api/lib/gitpod/v1/installation_pb";
 import {
@@ -155,6 +157,7 @@ import {
     WorkspacePort,
     WorkspacePort_Protocol,
     WorkspaceSession,
+    WorkspaceSession_Metrics,
     WorkspaceSnapshot,
     WorkspaceSpec,
     WorkspaceSpec_GitSpec,
@@ -198,6 +201,13 @@ export class PublicAPIConverter {
         if (arg.instance.stoppedTime) {
             result.stoppedTime = Timestamp.fromDate(new Date(arg.instance.stoppedTime));
         }
+
+        const { metrics } = arg.instance.status;
+        result.metrics = new WorkspaceSession_Metrics({
+            totalImageSize: metrics?.image?.totalSize ? BigInt(metrics.image.totalSize) : undefined,
+            workspaceImageSize: metrics?.image?.workspaceImageSize ? BigInt(metrics.image.workspaceImageSize) : undefined,
+        });
+
         return result;
     }
 
@@ -1665,6 +1675,13 @@ export class PublicAPIConverter {
     toOnboardingState(state: GitpodServer.OnboardingState): OnboardingState {
         return new OnboardingState({
             completed: state.isCompleted,
+            organizationCountTotal: state.organizationCountTotal,
+        });
+    }
+
+    toInstallationConfiguration(config: GitpodServerInstallationConfiguration): InstallationConfiguration {
+        return new InstallationConfiguration({
+            isDedicatedInstallation: config.isDedicatedInstallation,
         });
     }
 
