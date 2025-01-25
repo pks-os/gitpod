@@ -32,6 +32,7 @@ import {
     CommitContext,
     Disposable,
     DisposableCollection,
+    EnvVar,
     GitCheckoutInfo,
     GitpodServer,
     GitpodToken,
@@ -411,6 +412,7 @@ export class WorkspaceStarter {
 
                         const envVars = await this.envVarService.resolveEnvVariables(
                             user.id,
+                            workspace.organizationId,
                             workspace.projectId,
                             workspace.type,
                             workspace.context,
@@ -839,14 +841,12 @@ export class WorkspaceStarter {
 
     private async getAdditionalImageAuth(envVars: ResolvedEnvVars): Promise<Map<string, string>> {
         const res = new Map<string, string>();
-        const imageAuth = envVars.project.find((e) => e.name === "GITPOD_IMAGE_AUTH");
+        const imageAuth = envVars.workspace.find((e) => e.name === EnvVar.GITPOD_IMAGE_AUTH_ENV_VAR_NAME);
         if (!imageAuth) {
             return res;
         }
 
-        const imageAuthValue = (await this.projectDB.getProjectEnvironmentVariableValues([imageAuth]))[0];
-
-        (imageAuthValue.value || "")
+        (imageAuth.value || "")
             .split(",")
             .map((e) => e.trim().split(":"))
             .filter((e) => e.length == 2)
@@ -1562,6 +1562,11 @@ export class WorkspaceStarter {
             sysEnvvars.push(ev);
         }
 
+        const organizationSettings = await this.orgService.getSettings(user.id, workspace.organizationId);
+        sysEnvvars.push(
+            newEnvVar("GITPOD_COMMIT_ANNOTATION_ENABLED", organizationSettings.annotateGitCommits ? "true" : "false"),
+        );
+
         const orgIdEnv = new EnvironmentVariable();
         orgIdEnv.setName("GITPOD_DEFAULT_WORKSPACE_IMAGE");
         orgIdEnv.setValue(await this.configProvider.getDefaultImage(workspace.organizationId));
@@ -1608,7 +1613,6 @@ export class WorkspaceStarter {
             spec.setTimeout(defaultTimeout);
             spec.setMaximumLifetime(workspaceLifetime);
             if (allowSetTimeout) {
-                const organizationSettings = await this.orgService.getSettings(user.id, workspace.organizationId);
                 if (organizationSettings.timeoutSettings?.inactivity) {
                     try {
                         const timeout = WorkspaceTimeoutDuration.validate(
